@@ -1,6 +1,6 @@
 # Copyright 2026 Udgam Labs. Licensed under the Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
 """Diagnostic variant of the Telugu fresh-text set: ASCII punctuation removed and every whitespace run (newlines too)
-collapsed to one space. Paramanu-Telugu's greedy output has no punctuation or line breaks, which suggests its training text
+collapsed to one space. nanochat-telugu-560M's greedy output has no punctuation or line breaks, which suggests its training text
 had them stripped; scoring every model on this copy shows how much of a bits-per-byte gap is punctuation alone.
 Not a headline benchmark: the headline is the unmodified set.
 

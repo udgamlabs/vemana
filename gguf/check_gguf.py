@@ -32,13 +32,13 @@ def llama_ids(gguf, text):
 
 def llama_greedy(gguf, prompt, n):
     out = subprocess.run(["llama-completion", "-m", gguf, "-p", prompt, "-n", str(n), "--temp", "0", "--no-display-prompt",
-                          "-c", "1024"], capture_output=True, text=True).stdout   # --log-disable would also hide the text
+                          "-c", "1024"], capture_output=True, text=True, check=True).stdout   # --log-disable would also hide the text
     return out[1:] if out.startswith(" ") else out   # llama.cpp keeps the space SentencePiece puts before the first piece
 
 
 def llama_ppl(gguf, path, ctx, chunks):
     out = subprocess.run(["llama-perplexity", "-m", gguf, "-f", path, "-c", str(ctx), "--chunks", str(chunks), "-b", str(ctx)],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, check=True)
     m = re.search(r"Final estimate: PPL = ([0-9.]+)", out.stdout + out.stderr)
     return float(m.group(1)) if m else None
 
