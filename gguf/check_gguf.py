@@ -10,6 +10,7 @@
 import argparse
 import json
 import math
+import os
 import re
 import subprocess
 import tempfile
@@ -25,9 +26,12 @@ PROMPTS = ["వర్షాకాలంలో", "కంప్యూటర్ అ
 def llama_ids(gguf, text):
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
         f.write(text)
-    out = subprocess.run(["llama-tokenize", "-m", gguf, "-f", f.name, "--ids", "--log-disable"],
-                         capture_output=True, text=True, check=True).stdout.strip().splitlines()[-1]
-    return json.loads(out)
+    try:
+        out = subprocess.run(["llama-tokenize", "-m", gguf, "-f", f.name, "--ids", "--log-disable"],
+                             capture_output=True, text=True, check=True).stdout.strip().splitlines()[-1]
+        return json.loads(out)
+    finally:
+        os.unlink(f.name)
 
 
 def llama_greedy(gguf, prompt, n):
@@ -101,14 +105,17 @@ def main():
     text = "\n\n".join(texts[:120])
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
         f.write(text)
-    ids = tok(text)["input_ids"]
-    ppl, n = hf_ppl(model, ids, a.ctx, a.chunks, tok.bos_token_id)
-    res["ppl_hf_fp32"] = {"ppl": ppl, "tokens_scored": n, "ctx": a.ctx, "chunks": a.chunks}
-    print("transformers fp32 PPL", round(ppl, 4), "tokens", n, flush=True)
-    for g in a.ggufs:
-        p = llama_ppl(g, f.name, a.ctx, a.chunks)
-        res["ggufs"][g]["ppl"] = p
-        print(g, "llama.cpp PPL", p, flush=True)
+    try:
+        ids = tok(text)["input_ids"]
+        ppl, n = hf_ppl(model, ids, a.ctx, a.chunks, tok.bos_token_id)
+        res["ppl_hf_fp32"] = {"ppl": ppl, "tokens_scored": n, "ctx": a.ctx, "chunks": a.chunks}
+        print("transformers fp32 PPL", round(ppl, 4), "tokens", n, flush=True)
+        for g in a.ggufs:
+            p = llama_ppl(g, f.name, a.ctx, a.chunks)
+            res["ggufs"][g]["ppl"] = p
+            print(g, "llama.cpp PPL", p, flush=True)
+    finally:
+        os.unlink(f.name)
     json.dump(res, open(a.out, "w"), ensure_ascii=False, indent=1)
 
 
